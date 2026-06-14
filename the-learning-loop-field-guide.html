@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Learning Loop — A White Paper for Adopting AI Agents</title>
+<style>
+  :root{
+    --paper:#FBFBF8;
+    --panel:#F4F3EC;
+    --panel-2:#EFEEE4;
+    --ink:#1A1A17;
+    --ink-soft:#52514A;
+    --ink-faint:#83827A;
+    --line:#E4E2D7;
+    --line-strong:#D2CFC2;
+    --indigo:#2B3A75;
+    --indigo-deep:#1C2654;
+    --ochre:#B05410;
+    --ochre-soft:rgba(176,84,16,0.10);
+    --ochre-line:rgba(176,84,16,0.28);
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --measure:42rem;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} }
+
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--serif);
+    font-size:19px;
+    line-height:1.66;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  /* reading progress */
+  #progress{
+    position:fixed; top:0; left:0; height:3px; width:0%;
+    background:var(--ochre); z-index:50;
+    transition:width .12s linear;
+  }
+
+  .wrap{ max-width:46rem; margin:0 auto; padding:0 1.5rem; }
+
+  /* ---------- eyebrows / labels (sans utility) ---------- */
+  .eyebrow{
+    font-family:var(--sans);
+    font-size:.72rem;
+    font-weight:600;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--ochre);
+    margin:0 0 .9rem 0;
+    display:flex; align-items:center; gap:.6rem;
+  }
+  .eyebrow .num{
+    font-variant-numeric:tabular-nums;
+    color:var(--ink-faint);
+    font-weight:700;
+  }
+
+  /* ---------- headings ---------- */
+  h1,h2,h3{ font-weight:700; line-height:1.12; letter-spacing:-0.01em; }
+  h2{ font-size:2rem; margin:0 0 1rem 0; }
+  h3{ font-size:1.28rem; margin:2.2rem 0 .6rem 0; letter-spacing:-0.005em; }
+  p{ margin:0 0 1.15rem 0; }
+  a{ color:var(--indigo); text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:2px; }
+  a:hover{ color:var(--indigo-deep); }
+  strong{ font-weight:700; }
+  em{ font-style:italic; }
+
+  .lede{ font-size:1.18rem; color:var(--ink-soft); }
+
+  /* ---------- HERO ---------- */
+  header.hero{
+    border-bottom:1px solid var(--line);
+    padding:5.5rem 0 3rem 0;
+    background:
+      radial-gradient(120% 80% at 88% -10%, rgba(43,58,117,0.05), transparent 60%),
+      var(--paper);
+  }
+  .kicker{
+    font-family:var(--sans); font-size:.74rem; font-weight:600;
+    letter-spacing:.2em; text-transform:uppercase; color:var(--ink-faint);
+    margin:0 0 1.4rem 0;
+  }
+  .kicker b{ color:var(--ochre); font-weight:700; }
+  h1.title{
+    font-size:clamp(2.6rem,7vw,4rem);
+    line-height:1.02;
+    letter-spacing:-0.025em;
+    margin:0 0 1rem 0;
+  }
+  .subtitle{
+    font-size:clamp(1.15rem,2.6vw,1.4rem);
+    color:var(--ink-soft);
+    font-style:italic;
+    max-width:34rem;
+    margin:0 0 2rem 0;
+  }
+  .thesis{
+    font-size:1.16rem;
+    max-width:var(--measure);
+    border-left:3px solid var(--ochre);
+    padding-left:1.2rem;
+    margin:0 0 2rem 0;
+  }
+  .credit-top{
+    font-family:var(--sans); font-size:.84rem; color:var(--ink-faint);
+    margin:0; padding-top:1.2rem; border-top:1px solid var(--line);
+  }
+
+  /* ---------- TOC / read in layers ---------- */
+  .toc{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:1.6rem 1.6rem 1rem 1.6rem;
+    margin:2.6rem 0 0 0;
+  }
+  .toc .toc-h{
+    font-family:var(--sans); font-size:.72rem; font-weight:700;
+    letter-spacing:.16em; text-transform:uppercase; color:var(--ink-faint);
+    margin:0 0 1rem 0;
+  }
+  .toc ol{ list-style:none; counter-reset:toc; margin:0; padding:0; }
+  .toc li{ counter-increment:toc; margin:0 0 .7rem 0; padding-left:2.6rem; position:relative; }
+  .toc li::before{
+    content:counter(toc);
+    position:absolute; left:0; top:.05em;
+    font-family:var(--sans); font-weight:700; font-size:.95rem;
+    color:var(--ochre);
+    width:1.8rem; text-align:right;
+  }
+  .toc a{ font-family:var(--sans); font-size:1rem; font-weight:600; color:var(--ink); text-decoration:none; }
+  .toc a:hover{ color:var(--indigo); }
+  .toc .d{ font-family:var(--sans); font-size:.92rem; color:var(--ink-faint); font-weight:400; display:block; margin-top:.1rem; }
+
+  /* ---------- sections ---------- */
+  section{ padding:3.6rem 0; border-bottom:1px solid var(--line); }
+  section:last-of-type{ border-bottom:none; }
+
+  /* ---------- THE FOUR LAWS (signature) ---------- */
+  .laws{ margin:2rem 0 0 0; }
+  .law{
+    display:flex; gap:1.4rem; align-items:flex-start;
+    padding:1.5rem 0;
+    border-top:1px solid var(--line);
+  }
+  .law:first-child{ border-top:2px solid var(--ink); }
+  .law .n{
+    font-family:var(--sans);
+    font-size:2.6rem; font-weight:800; line-height:.9;
+    color:var(--ochre);
+    min-width:2.4rem; text-align:right;
+    font-variant-numeric:tabular-nums;
+  }
+  .law .body h4{
+    font-family:var(--serif); font-size:1.3rem; font-weight:700; margin:.1rem 0 .35rem 0;
+  }
+  .law .body p{ margin:0; color:var(--ink-soft); font-size:1.06rem; }
+  .law .body .plain{ color:var(--ink); }
+  .precedence{
+    font-family:var(--sans); font-size:.95rem; color:var(--ink-soft);
+    background:var(--ochre-soft); border:1px solid var(--ochre-line);
+    border-radius:8px; padding:1rem 1.2rem; margin-top:1.8rem;
+  }
+
+  /* ---------- rules of the road ---------- */
+  .ruleset{ margin-top:1.4rem; }
+  .ruleset h3{ display:flex; align-items:baseline; gap:.6rem; }
+  .rule{
+    padding:.95rem 0; border-top:1px solid var(--line);
+    display:flex; gap:1rem; align-items:baseline;
+  }
+  .rule:first-of-type{ border-top:1px solid var(--line-strong); }
+  .rule .tag{
+    font-family:var(--sans); font-size:.66rem; font-weight:700; letter-spacing:.06em;
+    color:var(--indigo); background:rgba(43,58,117,0.08);
+    border-radius:5px; padding:.2rem .5rem; white-space:nowrap;
+    margin-left:.5rem; vertical-align:middle; display:inline;
+  }
+  .rule .rt{ margin:0; }
+  .rule .rt b{ font-weight:700; }
+
+  /* ---------- diagrams ---------- */
+  figure{ margin:2rem 0; }
+  figcaption{ font-family:var(--sans); font-size:.86rem; color:var(--ink-faint); margin-top:.7rem; text-align:center; }
+
+  .stack{ display:flex; flex-direction:column; gap:.6rem; }
+  .band{
+    border-radius:10px; padding:1.1rem 1.3rem;
+    border:1px solid var(--line-strong);
+  }
+  .band .bt{ font-family:var(--sans); font-weight:700; font-size:1.02rem; margin:0 0 .15rem 0; }
+  .band .bd{ font-family:var(--sans); font-size:.92rem; margin:0; }
+  .band.top{ background:var(--ochre-soft); border-color:var(--ochre-line); }
+  .band.top .bt{ color:var(--ochre); }
+  .band.top .bd{ color:var(--ink-soft); }
+  .band.mid{ background:var(--indigo); border-color:var(--indigo-deep); }
+  .band.mid .bt{ color:#fff; }
+  .band.mid .bd{ color:#D7DCF0; }
+  .band.mid .own{ font-family:var(--sans); font-size:.7rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#AEB8E0; display:block; margin-bottom:.3rem;}
+  .band.top .own{ font-family:var(--sans); font-size:.7rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ochre); opacity:.75; display:block; margin-bottom:.3rem;}
+  .band.bot .own{ font-family:var(--sans); font-size:.7rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); display:block; margin-bottom:.3rem;}
+  .band.bot{ background:var(--panel-2); }
+  .band.bot .bt{ color:var(--ink-soft); }
+  .band.bot .bd{ color:var(--ink-faint); }
+
+  /* intersection formula */
+  .intersect{
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:.6rem; margin:1.4rem 0 .4rem 0;
+  }
+  .ic{
+    background:var(--panel); border:1px solid var(--line-strong); border-radius:9px;
+    padding:1rem; text-align:center;
+  }
+  .ic .axis{ font-family:var(--sans); font-size:.68rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ochre); margin:0 0 .35rem 0; }
+  .ic .what{ font-family:var(--sans); font-size:.96rem; font-weight:600; color:var(--ink); margin:0; }
+  .ic .ex{ font-family:var(--sans); font-size:.82rem; color:var(--ink-faint); margin:.3rem 0 0 0; }
+  .ireq{
+    text-align:center; font-family:var(--sans); font-weight:700; font-size:1rem; color:var(--indigo);
+    background:rgba(43,58,117,0.06); border-radius:9px; padding:.9rem; margin-top:.2rem;
+  }
+
+  /* pipeline */
+  .pipe{ display:flex; flex-direction:column; gap:.6rem; margin:1.4rem 0; }
+  .step{ display:flex; gap:1rem; align-items:flex-start; background:var(--panel); border:1px solid var(--line); border-radius:9px; padding:1rem 1.2rem; }
+  .step .sn{ font-family:var(--sans); font-weight:800; color:var(--ochre); font-size:1.2rem; min-width:1.4rem; }
+  .step .sb b{ font-family:var(--sans); font-size:1rem; }
+  .step .sb{ font-family:var(--sans); font-size:.95rem; color:var(--ink-soft); }
+  .step .sb b{ color:var(--ink); display:block; margin-bottom:.15rem; font-weight:700; }
+
+  /* example callout */
+  .example{
+    background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--indigo);
+    border-radius:0 10px 10px 0; padding:1.4rem 1.5rem; margin:1.8rem 0;
+  }
+  .example .xl{ font-family:var(--sans); font-size:.72rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--indigo); margin:0 0 .6rem 0; }
+  .example p{ margin:0; font-size:1.04rem; }
+
+  /* acceptance test */
+  .gate{ list-style:none; margin:1.4rem 0; padding:0; }
+  .gate li{
+    display:flex; gap:.9rem; align-items:flex-start;
+    padding:.9rem 0; border-top:1px solid var(--line);
+    font-family:var(--sans); font-size:1.02rem;
+  }
+  .gate li:first-child{ border-top:none; }
+  .gate .chk{
+    color:var(--ochre); font-weight:800; font-family:var(--sans); margin-top:.05rem;
+  }
+  .gate b{ color:var(--ink); font-weight:700; }
+  .gate span.law{ font-family:var(--sans); font-size:.66rem; font-weight:700; color:var(--indigo); background:rgba(43,58,117,0.08); border-radius:5px; padding:.15rem .45rem; margin-left:.4rem; white-space:nowrap; }
+
+  /* crawl walk run */
+  .cwr{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:.8rem; margin:1.6rem 0; }
+  .phase{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:1.2rem; }
+  .phase h4{ font-family:var(--sans); font-size:.95rem; font-weight:700; margin:0 0 .5rem 0; color:var(--indigo); }
+  .phase p{ font-family:var(--sans); font-size:.9rem; color:var(--ink-soft); margin:0; }
+
+  /* closing + footer */
+  .closing{ font-size:1.14rem; }
+  footer{ background:var(--ink); color:#D8D6CC; padding:3rem 0; font-family:var(--sans); }
+  footer h4{ font-family:var(--sans); font-size:.95rem; font-weight:700; color:#fff; margin:0 0 .6rem 0; }
+  footer p{ font-size:.92rem; line-height:1.6; color:#B4B2A8; margin:0 0 .8rem 0; }
+  footer a{ color:#E5C9A8; }
+  footer .fine{ font-size:.8rem; color:#86847B; border-top:1px solid #34332E; padding-top:1.2rem; margin-top:1.4rem; }
+
+  /* constitution: preamble + status */
+  .preamble{
+    font-family:var(--sans); font-size:1rem; color:var(--ink-soft);
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:1.1rem 1.3rem; margin:1.6rem 0 0 0;
+  }
+  .preamble b{ color:var(--ink); font-weight:700; }
+  .status{
+    font-family:var(--sans); font-size:.86rem; color:var(--ink-soft);
+    display:flex; flex-wrap:wrap; gap:.4rem 1.5rem; margin:1rem 0 0 0;
+  }
+  .status span::before{ content:"\25CF"; color:var(--ochre); font-size:.5rem; margin-right:.5rem; vertical-align:middle; }
+  .status b{ color:var(--ink); font-weight:600; }
+
+  /* entrenchment tiers */
+  .tiers{ display:flex; flex-direction:column; gap:.5rem; margin:1.6rem 0; }
+  .tier{
+    display:grid; grid-template-columns:1fr auto; gap:.4rem 1rem; align-items:center;
+    border:1px solid var(--line); border-radius:9px; padding:1rem 1.2rem; background:var(--panel);
+  }
+  .tier .tname{ font-family:var(--sans); font-weight:700; color:var(--ink); font-size:1.02rem; }
+  .tier .tcov{ font-family:var(--sans); font-size:.92rem; color:var(--ink-soft); margin-top:.2rem; }
+  .bar{ font-family:var(--sans); font-size:.66rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:.3rem .65rem; border-radius:20px; white-space:nowrap; }
+  .bar.b4{ background:var(--ink); color:#fff; }
+  .bar.b3{ background:var(--ochre); color:#fff; }
+  .bar.b2{ background:var(--ochre-soft); color:var(--ochre); border:1px solid var(--ochre-line); }
+  .bar.b1{ background:rgba(43,58,117,0.08); color:var(--indigo); }
+
+  /* guardrail list */
+  .glist{ margin:1.4rem 0; padding:0; list-style:none; }
+  .glist li{ padding:.75rem 0 .75rem 1.5rem; border-top:1px solid var(--line); position:relative; }
+  .glist li:first-child{ border-top:none; }
+  .glist li::before{ content:"\00A7"; position:absolute; left:0; top:.78rem; color:var(--ochre); font-family:var(--sans); font-weight:700; }
+  .glist b{ font-weight:700; }
+
+  /* changelog (footer) */
+  .changelog{ margin:1.6rem 0 0 0; }
+  .changelog .cl{ display:flex; gap:.9rem; align-items:baseline; font-family:var(--sans); font-size:.86rem; color:#B4B2A8; padding:.35rem 0; }
+  .changelog .v{ color:#E5C9A8; font-weight:700; min-width:3rem; }
+
+  @media (max-width:640px){
+    .tier{ grid-template-columns:1fr; }
+    .bar{ justify-self:start; }
+    .status{ font-size:.82rem; }
+  }
+  @media print{
+    .bar{ border:1px solid #999; color:#000 !important; background:#eee !important; }
+    .changelog .v, .changelog .cl{ color:#000 !important; }
+    .tier, .glist li{ page-break-inside:avoid; }
+  }
+
+  /* responsive */
+  @media (max-width:640px){
+    body{ font-size:18px; }
+    .intersect{ grid-template-columns:1fr; }
+    .cwr{ grid-template-columns:1fr; }
+    .law .n{ font-size:2.1rem; min-width:1.8rem; }
+    section{ padding:2.8rem 0; }
+    h2{ font-size:1.7rem; }
+  }
+
+  /* print */
+  @media print{
+    :root{ --paper:#fff; }
+    body{ font-size:11pt; color:#000; }
+    #progress, .toc{ display:none; }
+    section, header.hero{ border-color:#ccc; }
+    .band.mid{ background:#e8e8e8 !important; }
+    .band.mid .bt, .band.mid .bd, .band.mid .own{ color:#000 !important; }
+    footer{ background:#fff; color:#000; }
+    footer p, footer h4, footer .fine, footer a{ color:#000 !important; }
+    a{ color:#000; }
+    section{ page-break-inside:avoid; }
+    .law, .rule, .step{ page-break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker"><b>Adopting AI Agents — A White Paper</b></p>
+    <h1 class="title">The Learning Loop</h1>
+    <p class="subtitle">How any organization can adopt AI agents — safely, and on its own terms.</p>
+    <p class="thesis">The winners in this shift will not be the ones with the best AI model. They will be the ones who build a <strong>learning loop</strong>: a system that combines human judgment with AI capability, gets a little better every time it is used, and remains theirs. This document proposes one way to build it, from the core idea to practical adoption.</p>
+    <p class="credit-top">Inspired by Satya Nadella's note on human and token capital. &nbsp;<a href="https://x.com/satyanadella/status/2066182223213293753?s=20" target="_blank" rel="noopener">Read the original &rarr;</a></p>
+
+    <p class="preamble"><b>This white paper proposes an operating model</b> — a shared way for people and AI to work together inside an organization. The four laws are its enduring core; the practices and mechanisms beneath them are meant to evolve as the technology does.</p>
+    <nav class="toc" aria-label="Contents">
+      <p class="toc-h">Layered from the big idea down to the details</p>
+      <ol>
+        <li><a href="#idea">The big idea</a><span class="d">Why AI is becoming a teammate, not just a tool.</span></li>
+        <li><a href="#laws">The four laws</a><span class="d">The core everything else follows.</span></li>
+        <li><a href="#road">Nine habits</a><span class="d">Nine practices that put the laws to work.</span></li>
+        <li><a href="#architecture">How to adopt it: the shape</a><span class="d">Rent the model, own the learning, govern the actions.</span></li>
+        <li><a href="#build">How to adopt it: build &amp; connect</a><span class="d">Vendors, skills, and connecting to data safely.</span></li>
+        <li><a href="#who">Who can build and use what</a><span class="d">Permission without a thousand-cell spreadsheet.</span></li>
+        <li><a href="#start">Getting started</a><span class="d">A simple path and a final checklist.</span></li>
+      </ol>
+    </nav>
+  </div>
+</header>
+
+<!-- 1 -->
+<section id="idea">
+  <div class="wrap">
+    <p class="eyebrow"><span class="num">01</span> The big idea</p>
+    <h2>From tools to teammates</h2>
+    <p class="lede">For decades, software was a tool: a person used it, and the value came from the person. Agents are different. For the first time, people and software can form a loop where each one teaches the other.</p>
+    <p>This is not a new observation — it is in the air across the industry. The useful framing is of two kinds of value being built side by side: the judgment, relationships, and instinct of people, and the AI capability an organization owns and keeps improving. That framing names the real contest — not which model is best, but whether an organization can keep learning while AI makes expertise easy to copy.</p>
+    <p>Two things follow, and they are a starting point here rather than a conclusion. First, people and AI do not compete for the same ground: human judgment grows <em>more</em> valuable as AI improves, because someone still has to set the goals, connect ideas across fields, and decide what matters. Second, an asset much more valuable than AI is the loop on top of it — where judgment and capability improve together, use after use. A task can be handed off, even a job; the learning cannot.</p>
+    <p>There is a wider stake here. If most value is delivered through the latest models, which can absorb knowledge from many sources, organizations risk seeing their expertise commoditized out from under them — an outcome few will accept for long. A much healthier end state is one where any organization can <em>own</em> the loop that holds its own knowledge, so value <em>spreads</em> instead of concentrating.</p>
+    <p>That is where the inspiration ends and the operating model begins. The framing above is the easy part; the hard part is doing it — building a loop that compounds without giving up control of it. The core principles (or laws), habits, and mechanisms that follow here in this document are one practical way to get there.</p>
+  </div>
+</section>
+
+<!-- 2 -->
+<section id="laws">
+  <div class="wrap">
+    <p class="eyebrow"><span class="num">02</span> The four laws</p>
+    <h2>Four laws, in order</h2>
+    <p class="lede">This proposal rests on four core principles, which we call "laws" for short. They are ordered by precedence: when two principles conflict, the lower-numbered law governs.</p>
+
+    <div class="laws">
+      <div class="law">
+        <div class="n">0</div>
+        <div class="body">
+          <h4>Spread the value</h4>
+          <p class="plain">No team, division, or partner should win by quietly taking value from the others. If a few capture everything, the whole system loses the permission it needs to exist.</p>
+        </div>
+      </div>
+      <div class="law">
+        <div class="n">1</div>
+        <div class="body">
+          <h4>People stay in charge</h4>
+          <p class="plain">AI makes human judgment bigger; it never removes the need for it. Every important action has a person who is accountable for it. The presumption is that this person has applied the organizational judgment that justifies the action.</p>
+        </div>
+      </div>
+      <div class="law">
+        <div class="n">2</div>
+        <div class="body">
+          <h4>Own what the organization learns</h4>
+          <p class="plain">The organization's know-how stays separate from any single AI model, so models can be switched without losing what makes it distinctive.</p>
+        </div>
+      </div>
+      <div class="law">
+        <div class="n">3</div>
+        <div class="body">
+          <h4>Get better every time</h4>
+          <p class="plain">Every use should leave the system a little smarter than before, mainly by producing artifacts that capture the human judgment and AI contribution behind the work: code, documents, skills, agents, tests, or other reusable assets. Each artifact becomes a platform for the next cycle of work.</p>
+        </div>
+      </div>
+    </div>
+
+    <p class="precedence"><strong>Together, they mean:</strong> the loop grows (3), but never by giving up ownership (2), never at the cost of people staying in charge (1), and never in a way that starves the whole (0).</p>
+  </div>
+</section>
+
+<!-- 3 -->
+<section id="road">
+  <div class="wrap">
+    <p class="eyebrow"><span class="num">03</span> Nine habits</p>
+    <h2>Nine habits that keep it healthy</h2>
+    <p class="lede">The laws say what matters. These are the everyday habits that put them into practice. Each one serves a law.</p>
+
+    <div class="ruleset">
+      <h3>Keeping people in charge</h3>
+      <div class="rule"><p class="rt"><b>One person owns every important action.</b> An agent acts on someone's behalf — and that someone is responsible. "The AI did it" is never an answer. <span class="tag">LAW 1</span></p></div>
+      <div class="rule"><p class="rt"><b>Autonomy matches risk.</b> Low-risk, easy-to-undo work can run on its own. High-risk or hard-to-undo work waits for a person to say yes. <span class="tag">LAW 1</span></p></div>
+      <div class="rule"><p class="rt"><b>People keep learning.</b> AI works as a coach for work someone is still mastering, and as autopilot only for work the accountable person or team already understands well. Otherwise the next generation never builds the judgment the whole loop depends on. <span class="tag">LAW 1</span></p></div>
+    </div>
+
+    <div class="ruleset">
+      <h3>Owning what the organization learns</h3>
+      <div class="rule"><p class="rt"><b>The model is rented; the learning is owned.</b> Models come and go. The skills, tests, and know-how built up stay with the organization. <span class="tag">LAW 2</span></p></div>
+    </div>
+
+    <div class="ruleset">
+      <h3>Getting better every time</h3>
+      <div class="rule"><p class="rt"><b>Every use feeds back.</b> What worked is captured and fed back, so the system improves with use instead of forgetting. <span class="tag">LAW 3</span></p></div>
+      <div class="rule"><p class="rt"><b>Outcome tests decide.</b> AI is judged against real outcomes — did it actually help? — not a vendor's scorecard. <span class="tag">LAW 3</span></p></div>
+    </div>
+
+    <div class="example">
+      <p class="xl">What one loop cycle looks like</p>
+      <p>In engineering, the cycle is unusually visible. Other domains may produce different artifacts, but the same pattern applies. A developer starts from an existing codebase, including whatever was captured about it before. Working with an AI on a new task, the deliverable is not only working code: it includes tests that encode what correct behavior looks like, and a short note on what was subtle, which tradeoffs were considered, what was chosen, and where human judgment was applied. Those assets sit <em>alongside</em> the code. When the next task arrives, it starts from that captured knowledge rather than from a blank slate. The question "why does this work this way?" has a recorded answer. Each cycle deposits a little more; the next one draws on it. That is the loop, and it is what makes the accumulated know-how worth more than the code itself.</p>
+    </div>
+
+    <div class="ruleset">
+      <h3>Making it safe to scale</h3>
+      <div class="rule"><p class="rt"><b>Who did what is always known.</b> Every action is logged and traceable, back through the agent to the people whose judgment shaped it. <span class="tag">LAW 1</span></p></div>
+      <div class="rule"><p class="rt"><b>Shared failures are planned for.</b> Copies of the same agent fail the same way at once — so rollouts go slowly, with close watching and an off switch. <span class="tag">LAW 0</span></p></div>
+      <div class="rule"><p class="rt"><b>Exploration has room.</b> Time is set aside for bold experiments the system would never find on its own. <span class="tag">LAW 0</span></p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section id="architecture">
+  <div class="wrap">
+    <p class="eyebrow"><span class="num">04</span> How to adopt it &middot; the shape</p>
+    <h2>Three layers, and the middle is owned</h2>
+    <p class="lede">The simplest way to honor the laws is to build in three layers. The goal is to keep them separate, so the distinctive part never gets locked to a vendor.</p>
+
+    <figure>
+      <div class="stack">
+        <div class="band top">
+          <span class="own">The control plane</span>
+          <p class="bt">The action layer — governed</p>
+          <p class="bd">Decides who can act, on whose authority, and at what level of risk. Unlike the middle, this layer does not accumulate value — it enforces accountability at every action. The organization governs it the way a policy governs conduct.</p>
+        </div>
+        <div class="band mid">
+          <span class="own">The accumulating asset</span>
+          <p class="bt">The learning layer — owned</p>
+          <p class="bd">The skills, tests, and institutional memory built up over time. This is the value that compounds, and it stays portable.</p>
+        </div>
+        <div class="band bot">
+          <span class="own">Rented infrastructure</span>
+          <p class="bt">The models — rented</p>
+          <p class="bd">Powerful, but a commodity. They can be swapped anytime, and should hold none of the organization's know-how.</p>
+        </div>
+      </div>
+      <figcaption>The adoption model in its simplest form: rent the models, own the learning, govern the actions.</figcaption>
+    </figure>
+
+    <p>Why this shape? Because it makes the laws real instead of aspirational. The <strong>bottom</strong> stays swappable, so no single vendor can hold the organization hostage. The <strong>middle</strong> is where the organization's accumulated judgment lives, in a form it keeps even if models change — that is ownership it can prove. The <strong>top</strong> is where every action passes through a checkpoint that decides who is authorized and how much risk is allowed — it is a control plane, not an asset. The organization controls both middle and top; what differs is what each is fundamentally for: the middle accumulates, the top enforces.</p>
+    <p>The test of true ownership is simple: swap out the underlying model and confirm all the institutional know-how survives. If it does, the organization is sovereign. If it does not, it is renting its own expertise back from someone else.</p>
+  </div>
+</section>
+
+<!-- 5 -->
+<section id="build">
+  <div class="wrap">
+    <p class="eyebrow"><span class="num">05</span> How to adopt it &middot; build &amp; connect</p>
+    <h2>Bringing in vendors, building skills, plugging in</h2>
+
+    <h3>Choosing a model or vendor</h3>
+    <p>In this approach, every AI provider would sit behind a single doorway, so nothing in the organization is wired directly to one. Before a vendor is brought in, the proposal calls for a firm promise — in the contract and in the technology — that prompts and data will never be fed into their shared model. The same know-how should run on a different model with equal capability. An organization that cannot switch does not yet own its loop.</p>
+
+    <h3>Building skills and agents</h3>
+    <p>A <strong>skill</strong> is a reusable piece of know-how an agent can use — a way of doing one job well. In this approach, skills are treated as organizational property — versioned, owned by a named person, and easy to move. A skill can grow through three stages, and how far it travels determines the level of review needed.</p>
+
+    <div class="pipe">
+      <div class="step"><span class="sn">1</span><span class="sb"><b>Sandbox</b> Anyone can build and try a skill — on practice data only, with no power to take real action.</span></div>
+      <div class="step"><span class="sn">2</span><span class="sb"><b>Team-shared</b> A senior subject-matter owner reviews it and it passes an outcome test. Now the team can use it on real data.</span></div>
+      <div class="step"><span class="sn">3</span><span class="sb"><b>Organization-wide</b> A central review checks safety and privacy walls. Now any division can use it.</span></div>
+    </div>
+    <p>Each stage calls for the same elements: a named owner, a record of whose judgment it holds, an outcome test, and a slow, watched rollout.</p>
+
+    <h3>Connecting to data and tools</h3>
+    <p>Agents reach the organization's systems through a standard interface — often called <a href="https://modelcontextprotocol.io" target="_blank" rel="noopener"><strong>MCP</strong></a> — that lets agents connect to approved tools in a consistent way. Two principles keep this safe. First, an agent gets exactly the permissions of the person it is acting for — never a master key. Second, access control lives with the data itself, not only in the agent's instructions. Every connection carries a label — its <strong>manifest</strong> — that states who owns it, what data it needs, and what it is allowed to do. The system reads that label and honors it.</p>
+  </div>
+</section>
+
+<!-- 6 -->
+<section id="who">
+  <div class="wrap">
+    <p class="eyebrow"><span class="num">06</span> Who can build and use what</p>
+    <h2>Permission, without a thousand-cell spreadsheet</h2>
+    <p class="lede">Organizations are a grid: divisions, types of work, and levels of experience. Writing a rule for every box in that grid would bury the system in exceptions. Instead, each of the three decides a different thing, and they combine.</p>
+
+    <figure>
+      <div class="intersect">
+        <div class="ic">
+          <p class="axis">Division</p>
+          <p class="what">What data it may see</p>
+          <p class="ex">Finance data stays in Finance unless shared on purpose.</p>
+        </div>
+        <div class="ic">
+          <p class="axis">Type of work</p>
+          <p class="what">What actions it may take</p>
+          <p class="ex">Reading is low-risk. Changing things is not.</p>
+        </div>
+        <div class="ic">
+          <p class="axis">Experience level</p>
+          <p class="what">How much it may do alone</p>
+          <p class="ex">More independence comes with more seniority.</p>
+        </div>
+      </div>
+      <div class="ireq">What an agent may do = the overlap of all three</div>
+      <figcaption>An agent can only do what the data, the action rules, and the person's level <em>all</em> allow at once.</figcaption>
+    </figure>
+
+    <p>This is why the whole grid never needs to be filled in. Each agent simply acts <strong>as</strong> the person who invokes it, inheriting exactly their permissions and no more. Chaining skills together can never add up to more power than that person has. And anything risky or crossing a division line still pauses for a human yes.</p>
+    <p>Experience level also decides who can <em>build</em>. Anyone can prototype in the sandbox. Promoting a skill so others depend on it takes sign-off from someone senior. The more senior the role, the more the job shifts from using the loop to teaching it — reviewing, setting goals, and writing the tests that everything else should pass.</p>
+
+    <div class="example">
+      <p class="xl">A small example</p>
+      <p>A junior analyst in Finance builds a skill that explains budget differences. They prototype it in the sandbox on sample numbers. To use it on the real ledger, a senior analyst reviews it and it passes an outcome test — now it is team-shared and can read real data under the analyst's permissions, but flags anything odd for a human. The junior can run it to read, but "post to the ledger" would be off-limits both to them and to the skill, so it would be blocked. If Sales wanted the same skill, they would be turned away at the data wall — unless Finance granted access on purpose, or a general version were shared with the Finance data walled off.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section id="start">
+  <div class="wrap">
+    <p class="eyebrow"><span class="num">07</span> Getting started</p>
+    <h2>A simple path, and a final check</h2>
+    <p class="lede">There is no need to do everything at once. Starting where the risk is low and the learning is high, then widening, is a good path.</p>
+
+    <div class="cwr">
+      <div class="phase">
+        <h4>Crawl</h4>
+        <p>A good starting point is one routine, low-risk job. A skill is built for it in the sandbox, with the AI provider doorway and the action checkpoint in place from the start.</p>
+      </div>
+      <div class="phase">
+        <h4>Walk</h4>
+        <p>A few skills are shared within one team. What works gets captured and fed back. Outcome tests begin. The organization confirms it can switch models.</p>
+      </div>
+      <div class="phase">
+        <h4>Run</h4>
+        <p>A shared library opens across divisions, with privacy walls and traceability built in. The people who make the shared system better are recognized for it.</p>
+      </div>
+    </div>
+
+    <p>Whatever goes live, hold it to one final check. Before anything is turned on, all five questions should have an answer:</p>
+
+    <ul class="gate">
+      <li><span class="chk">✓</span><span><b>Is a person named responsible</b> for what it does?<span class="law">LAW 1</span></span></li>
+      <li><span class="chk">✓</span><span><b>Can its model be swapped</b> without losing the know-how the organization has built?<span class="law">LAW 2</span></span></li>
+      <li><span class="chk">✓</span><span><b>Does it pass an outcome test</b>, not a vendor benchmark?<span class="law">LAW 3</span></span></li>
+      <li><span class="chk">✓</span><span><b>Can every action it takes be traced</b> back to a person?<span class="law">LAW 1</span></span></li>
+      <li><span class="chk">✓</span><span><b>Does it avoid taking value</b> from any team, division, or partner?<span class="law">LAW 0</span></span></li>
+    </ul>
+
+    <p class="closing">When that happens, AI stops being something bought and becomes something built. Expertise gets amplified instead of copied away. Judgment becomes part of systems that make it repeatable and shared. And the value flows to the organization and the community around it — which is the only version of this future that holds.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <h4>About this document</h4>
+    <p>A proposal for adopting AI agents in any organization — meant to be read in layers and adapted as needed. A leader, an operator, and an engineer can each take what they need.</p>
+
+    <p class="fine">The four laws are in order; when they pull against each other, the lower number wins.</p>
+  </div>
+</footer>
+
+<script>
+  // reading progress bar
+  (function(){
+    var bar = document.getElementById('progress');
+    function update(){
+      var h = document.documentElement;
+      var scrolled = h.scrollTop;
+      var height = h.scrollHeight - h.clientHeight;
+      var pct = height > 0 ? (scrolled / height) * 100 : 0;
+      bar.style.width = pct + '%';
+    }
+    document.addEventListener('scroll', update, {passive:true});
+    window.addEventListener('resize', update);
+    update();
+  })();
+</script>
+</body>
+</html>
